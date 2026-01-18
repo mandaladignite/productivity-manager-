@@ -14,6 +14,19 @@ export interface UIHabit {
 }
 
 /**
+ * Map API goalType to UI goalType
+ */
+function mapGoalType(apiGoalType?: "none" | "streak" | "completion" | "monthly" | "yearly" | "custom"): "none" | "monthly" | "yearly" | "custom" {
+  if (!apiGoalType || apiGoalType === "none") return "none";
+  // Map API types to UI types
+  if (apiGoalType === "monthly" || apiGoalType === "yearly" || apiGoalType === "custom") {
+    return apiGoalType;
+  }
+  // For "streak" or "completion", default to "custom"
+  return "custom";
+}
+
+/**
  * Transform a single habit from API format to UI format
  */
 export function transformHabitFromAPI(apiHabit: APIHabit): UIHabit {
@@ -33,7 +46,7 @@ export function transformHabitFromAPI(apiHabit: APIHabit): UIHabit {
     streak: apiHabit.currentStreak || apiHabit.streak || 0,
     completed: isCompletedToday,
     time: apiHabit.timeOfDay || "anytime",
-    goalType: apiHabit.goalType || "none",
+    goalType: mapGoalType(apiHabit.goalType as any),
     goalTarget: apiHabit.goalTarget,
     goalDate: apiHabit.goalDate,
     completions: apiHabit.completions || 0,
