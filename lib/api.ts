@@ -225,6 +225,25 @@ export const dailyPlanner = {
   },
 };
 
+// ==================== Day Notes API ====================
+
+export const dayNotes = {
+  get: async (date: string) => {
+    const response = await apiClient.get("/day-notes", { params: { date } });
+    return response.data;
+  },
+
+  createOrUpdate: async (data: { date: string; note?: string; reflection?: string }) => {
+    const response = await apiClient.post("/day-notes", data);
+    return response.data;
+  },
+
+  delete: async (date: string) => {
+    const response = await apiClient.delete("/day-notes", { params: { date } });
+    return response.data;
+  },
+};
+
 // ==================== Default Export ====================
 
 export default {
@@ -232,5 +251,6 @@ export default {
   habits,
   tasks,
   dailyPlanner,
+  dayNotes,
   client: apiClient,
 };

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Calendar, Plus, CheckCircle, Circle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, Plus, CheckCircle, Circle, ChevronLeft, ChevronRight, BookOpen, Edit2, Save, X } from "lucide-react";
 import api from "@/lib/api";
 import TaskForm from "@/components/forms/TaskForm";
 import Card from "@/components/ui/Card";
@@ -30,6 +30,10 @@ function PlannerPageContent() {
   const [error, setError] = useState("");
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [dayNote, setDayNote] = useState<{ note: string; reflection: string } | null>(null);
+  const [isEditingNote, setIsEditingNote] = useState(false);
+  const [noteForm, setNoteForm] = useState({ note: "", reflection: "" });
+  const [savingNote, setSavingNote] = useState(false);
 
   useEffect(() => {
     fetchDailyPlanner();
@@ -41,6 +45,19 @@ function PlannerPageContent() {
     try {
       const response = await api.dailyPlanner.get(selectedDate);
       setTasks(response.tasks || []);
+      if (response.dayNote) {
+        setDayNote({
+          note: response.dayNote.note || "",
+          reflection: response.dayNote.reflection || "",
+        });
+        setNoteForm({
+          note: response.dayNote.note || "",
+          reflection: response.dayNote.reflection || "",
+        });
+      } else {
+        setDayNote(null);
+        setNoteForm({ note: "", reflection: "" });
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to load daily planner");
       console.error("Error fetching daily planner:", err);
@@ -115,6 +132,40 @@ function PlannerPageContent() {
       month: "long",
       day: "numeric",
     });
+  };
+
+  const handleSaveNote = async () => {
+    try {
+      setSavingNote(true);
+      setError("");
+      await api.dayNotes.createOrUpdate({
+        date: selectedDate,
+        note: noteForm.note,
+        reflection: noteForm.reflection,
+      });
+      setDayNote({
+        note: noteForm.note,
+        reflection: noteForm.reflection,
+      });
+      setIsEditingNote(false);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to save day note");
+      console.error("Error saving day note:", err);
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
+  const handleCancelEditNote = () => {
+    if (dayNote) {
+      setNoteForm({
+        note: dayNote.note,
+        reflection: dayNote.reflection,
+      });
+    } else {
+      setNoteForm({ note: "", reflection: "" });
+    }
+    setIsEditingNote(false);
   };
 
   if (loading && tasks.length === 0) {
@@ -246,6 +297,106 @@ function PlannerPageContent() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </Card>
+
+        {/* Day Note/Reflection Section */}
+        <Card title="Day Notes & Reflection">
+          {isEditingNote ? (
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="dayNote" className="block text-sm font-medium text-gray-700 mb-2">
+                  Notes
+                </label>
+                <textarea
+                  id="dayNote"
+                  value={noteForm.note}
+                  onChange={(e) => setNoteForm({ ...noteForm, note: e.target.value })}
+                  placeholder="Add your notes for the day..."
+                  rows={4}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 placeholder-gray-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="dayReflection" className="block text-sm font-medium text-gray-700 mb-2">
+                  Reflection
+                </label>
+                <textarea
+                  id="dayReflection"
+                  value={noteForm.reflection}
+                  onChange={(e) => setNoteForm({ ...noteForm, reflection: e.target.value })}
+                  placeholder="Reflect on your day..."
+                  rows={4}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 placeholder-gray-500"
+                />
+              </div>
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  onClick={handleCancelEditNote}
+                  disabled={savingNote}
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <X className="w-4 h-4" />
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveNote}
+                  disabled={savingNote}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  {savingNote ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              {dayNote && (dayNote.note || dayNote.reflection) ? (
+                <div className="space-y-4">
+                  {dayNote.note && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                        <BookOpen className="w-4 h-4" />
+                        Notes
+                      </h4>
+                      <p className="text-sm text-gray-600 whitespace-pre-wrap bg-gray-50 p-3 rounded-lg">
+                        {dayNote.note}
+                      </p>
+                    </div>
+                  )}
+                  {dayNote.reflection && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                        <BookOpen className="w-4 h-4" />
+                        Reflection
+                      </h4>
+                      <p className="text-sm text-gray-600 whitespace-pre-wrap bg-gray-50 p-3 rounded-lg">
+                        {dayNote.reflection}
+                      </p>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => setIsEditingNote(true)}
+                    className="flex items-center gap-2 px-4 py-2 text-blue-600 border border-blue-300 rounded-lg hover:bg-blue-50"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    Edit
+                  </button>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <BookOpen className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                  <p className="text-gray-500 mb-2">No notes or reflections for this day.</p>
+                  <button
+                    onClick={() => setIsEditingNote(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 mx-auto"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Notes & Reflection
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </Card>
