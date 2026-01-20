@@ -83,6 +83,39 @@ export interface Habit {
   time?: string;
 }
 
+export interface Task {
+  _id?: string;
+  id?: string | number;
+  userId?: string;
+  title: string;
+  description?: string;
+  date: string | Date;
+  type: "binary" | "count" | "value";
+  quantity?: number;
+  value?: number;
+  completed?: boolean;
+  completedAt?: string | Date;
+  createdAt?: string;
+  updatedAt?: string;
+  // Recurring task fields
+  isRecurring?: boolean;
+  repeatPattern?: {
+    frequency: "daily" | "weekdays" | "weekly" | "monthly";
+    interval?: number;
+    endDate?: string | Date;
+    daysOfWeek?: number[];
+  };
+  parentTaskId?: string;
+  // Other options
+  priority?: "low" | "medium" | "high";
+  tags?: string[];
+  reminder?: {
+    enabled: boolean;
+    reminderTime?: string | Date;
+  };
+  duration?: number; // in minutes
+}
+
 // ==================== Auth API ====================
 
 export const auth = {
@@ -144,10 +177,60 @@ export const habits = {
   },
 };
 
+// ==================== Tasks API ====================
+
+export const tasks = {
+  getAll: async (params?: { date?: string; completed?: boolean; type?: string }) => {
+    const response = await apiClient.get("/tasks", { params });
+    return response.data;
+  },
+
+  getByDate: async (date: string) => {
+    const response = await apiClient.get(`/tasks/date/${date}`);
+    return response.data;
+  },
+
+  getById: async (id: string) => {
+    const response = await apiClient.get(`/tasks/${id}`);
+    return response.data;
+  },
+
+  create: async (data: Partial<Task>) => {
+    const response = await apiClient.post("/tasks", data);
+    return response.data;
+  },
+
+  update: async (id: string, data: Partial<Task>) => {
+    const response = await apiClient.put(`/tasks/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: string) => {
+    const response = await apiClient.delete(`/tasks/${id}`);
+    return response.data;
+  },
+
+  toggleCompletion: async (id: string) => {
+    const response = await apiClient.patch(`/tasks/${id}/toggle`);
+    return response.data;
+  },
+};
+
+// ==================== Daily Planner API ====================
+
+export const dailyPlanner = {
+  get: async (date: string) => {
+    const response = await apiClient.get("/daily-planner", { params: { date } });
+    return response.data;
+  },
+};
+
 // ==================== Default Export ====================
 
 export default {
   auth,
   habits,
+  tasks,
+  dailyPlanner,
   client: apiClient,
 };
