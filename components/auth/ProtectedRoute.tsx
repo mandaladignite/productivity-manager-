@@ -18,15 +18,18 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     try {
       const token = localStorage.getItem("token");
       if (!token) {
-        router.push("/login");
+        router.replace("/login");
         return;
       }
       
+      // Verify token is valid by calling getCurrentUser
       await api.auth.getCurrentUser();
       setIsAuthenticated(true);
-    } catch (err) {
+    } catch (err: any) {
+      // Token invalid, expired, or user unauthorized
       localStorage.removeItem("token");
-      router.push("/login");
+      // Use replace to avoid adding to history
+      router.replace("/login");
     } finally {
       setIsLoading(false);
     }

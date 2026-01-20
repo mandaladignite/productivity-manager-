@@ -8,10 +8,11 @@ import Drawer from "@/components/ui/Drawer";
 import HabitForm from "@/components/forms/HabitForm";
 import Card from "@/components/ui/Card";
 import Loading from "@/components/ui/Loading";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { TrendingUp, Activity, Target, AlertCircle, Calendar, BarChart3, TrendingDown } from "lucide-react";
 import api, { Habit } from "@/lib/api";
 
-export default function Dashboard() {
+function DashboardContent() {
   const router = useRouter();
   const [isHabitDrawerOpen, setIsHabitDrawerOpen] = useState(false);
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -477,7 +478,7 @@ export default function Dashboard() {
           </Card>
 
               {/* Footer Note */}
-              <div className="mt-6 text-center text-gray-600 text-sm">
+              <div className="mt-6 mb-6 lg:mb-0 text-center text-gray-600 text-sm">
                 Last updated: {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} • Auto-refresh every 15 min
               </div>
             </>
@@ -500,5 +501,13 @@ export default function Dashboard() {
 
       <BottomNav />
     </>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <ProtectedRoute>
+      <DashboardContent />
+    </ProtectedRoute>
   );
 }

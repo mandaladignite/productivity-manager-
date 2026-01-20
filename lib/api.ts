@@ -40,6 +40,11 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       if (typeof window !== "undefined") {
         localStorage.removeItem("token");
+        // Redirect to login page if not already there
+        const currentPath = window.location.pathname;
+        if (currentPath !== "/login" && currentPath !== "/signup" && currentPath !== "/") {
+          window.location.href = "/login";
+        }
       }
     }
     return Promise.reject(error);

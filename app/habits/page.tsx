@@ -8,6 +8,7 @@ import HabitForm from "@/components/forms/HabitForm";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Loading from "@/components/ui/Loading";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import api, { Habit as APIHabit } from "@/lib/api";
 import { transformHabitsFromAPI, UIHabit } from "@/lib/habitUtils";
 import { 
@@ -24,11 +25,13 @@ import {
   Activity,
   TrendingDown,
   Clock,
-  Award
+  Award,
+  Edit2
 } from "lucide-react";
 
-export default function HabitTracker() {
+function HabitTrackerContent() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [editingHabitId, setEditingHabitId] = useState<string | null>(null);
   const [habits, setHabits] = useState<UIHabit[]>([]);
   const [rawHabits, setRawHabits] = useState<APIHabit[]>([]); // Store raw API data for analytics
   const [loading, setLoading] = useState(true);
@@ -140,7 +143,7 @@ export default function HabitTracker() {
   const handleHabitSubmit = async (data: any) => {
     try {
       setError("");
-      await api.habits.create({
+      const habitData = {
         name: data.name,
         description: data.description || "",
         frequency: data.frequency || "daily",
@@ -148,13 +151,42 @@ export default function HabitTracker() {
         goalType: data.goalType || "none",
         goalTarget: data.goalType !== "none" ? data.goalTarget : undefined,
         goalDate: data.goalType !== "none" ? data.goalDate : undefined,
-      });
+      };
+
+      if (editingHabitId) {
+        // Update existing habit
+        await api.habits.update(editingHabitId, habitData);
+      } else {
+        // Create new habit
+        await api.habits.create(habitData);
+      }
+      
       setIsDrawerOpen(false);
+      setEditingHabitId(null);
       await fetchHabits(); // Refresh list
     } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to create habit");
-      console.error("Error creating habit:", err);
+      setError(err.response?.data?.message || (editingHabitId ? "Failed to update habit" : "Failed to create habit"));
+      console.error("Error saving habit:", err);
     }
+  };
+
+  const handleEditHabit = (habit: UIHabit) => {
+    // Find the raw habit data to get all fields
+    const rawHabit = rawHabits.find((h) => (h._id || h.id) === habit.id);
+    if (rawHabit) {
+      setEditingHabitId(String(habit.id));
+      setIsDrawerOpen(true);
+    }
+  };
+
+  const handleOpenCreateDrawer = () => {
+    setEditingHabitId(null);
+    setIsDrawerOpen(true);
+  };
+
+  const handleCloseDrawer = () => {
+    setIsDrawerOpen(false);
+    setEditingHabitId(null);
   };
 
   const toggleHabit = async (id: string | number) => {
@@ -209,7 +241,7 @@ export default function HabitTracker() {
               </div>
               <div className="mt-4 md:mt-0">
                 <Button
-                  onClick={() => setIsDrawerOpen(true)}
+                  onClick={handleOpenCreateDrawer}
                   className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
@@ -276,7 +308,7 @@ export default function HabitTracker() {
                   <p className="text-gray-600 mb-6">
                     Start building positive routines by tracking your daily habits.
                   </p>
-                  <Button onClick={() => setIsDrawerOpen(true)} className="bg-green-600 hover:bg-green-700">
+                  <Button onClick={handleOpenCreateDrawer} className="bg-green-600 hover:bg-green-700">
                     Add First Habit
                   </Button>
                 </Card>
@@ -313,14 +345,23 @@ export default function HabitTracker() {
                                 {habit.description} • {habit.time}
                               </p>
                             </div>
-                            {/* Delete Button */}
-                            <button
-                              onClick={() => deleteHabit(habit.id)}
-                              className="p-2 text-gray-400 hover:text-red-600 transition-colors flex-shrink-0"
-                              aria-label="Delete habit"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {/* Action Buttons */}
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <button
+                                onClick={() => handleEditHabit(habit)}
+                                className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                                aria-label="Edit habit"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => deleteHabit(habit.id)}
+                                className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                                aria-label="Delete habit"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
 
                           {/* Streak & Goal Info */}
@@ -381,8 +422,8 @@ export default function HabitTracker() {
               {/* Add Habit Button */}
               {habits.length > 0 && (
                 <button
-                  onClick={() => setIsDrawerOpen(true)}
-                  className="w-full p-6 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:text-gray-900 hover:border-gray-400 hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+                  onClick={handleOpenCreateDrawer}
+                  className="w-full mb-6 lg:mb-0 p-6 border-2 border-dashed border-gray-300 rounded-xl text-gray-600 hover:text-gray-900 hover:border-gray-400 hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
                 >
                   <Plus className="w-5 h-5" />
                   <span className="font-medium">Add New Habit</span>
@@ -603,20 +644,49 @@ export default function HabitTracker() {
         </div>
       </AppLayout>
 
-      {/* Habit Creation Drawer */}
+      {/* Habit Creation/Edit Drawer */}
       <Drawer
         isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        title="Create New Habit"
+        onClose={handleCloseDrawer}
+        title={editingHabitId ? "Edit Habit" : "Create New Habit"}
         footer={null}
       >
         <HabitForm
           onSubmit={handleHabitSubmit}
-          onCancel={() => setIsDrawerOpen(false)}
+          onCancel={handleCloseDrawer}
+          initialData={
+            editingHabitId
+              ? (() => {
+                  const rawHabit = rawHabits.find((h) => (h._id || h.id) === editingHabitId);
+                  if (rawHabit) {
+                    return {
+                      name: rawHabit.name,
+                      description: rawHabit.description || "",
+                      frequency: rawHabit.frequency || "daily",
+                      timeOfDay: rawHabit.timeOfDay || "anytime",
+                      goalType: rawHabit.goalType === "streak" || rawHabit.goalType === "completion" 
+                        ? "custom" 
+                        : (rawHabit.goalType || "none"),
+                      goalTarget: rawHabit.goalTarget || null,
+                      goalDate: rawHabit.goalDate || "",
+                    };
+                  }
+                  return undefined;
+                })()
+              : undefined
+          }
         />
       </Drawer>
 
       <BottomNav />
     </>
+  );
+}
+
+export default function HabitTracker() {
+  return (
+    <ProtectedRoute>
+      <HabitTrackerContent />
+    </ProtectedRoute>
   );
 }

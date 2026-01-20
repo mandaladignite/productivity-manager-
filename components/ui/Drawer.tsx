@@ -54,7 +54,7 @@ export default function Drawer({ isOpen, onClose, title, children, footer }: Dra
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">{children}</div>
+        <div className="flex-1 overflow-y-auto px-6 py-4 pb-20 lg:pb-4 safe-area-inset-bottom">{children}</div>
 
         {/* Footer */}
         {footer && (

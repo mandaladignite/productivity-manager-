@@ -6,9 +6,10 @@ import AppLayout from "@/components/layout/AppLayout";
 import BottomNav from "@/components/navigation/BottomNav";
 import Button from "@/components/ui/Button";
 import Loading from "@/components/ui/Loading";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import api from "@/lib/api";
 
-export default function Settings() {
+function SettingsContent() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -314,7 +315,7 @@ export default function Settings() {
           </div>
 
           {/* Footer Actions */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
+          <div className="mt-8 mb-4 lg:mb-0 pt-6 border-t border-gray-200">
             <div className="flex flex-col md:flex-row md:items-center justify-between">
               <div className="text-sm text-gray-500">
                 <p>All changes are automatically saved to draft.</p>
@@ -331,5 +332,13 @@ export default function Settings() {
       </AppLayout>
       <BottomNav />
     </>
+  );
+}
+
+export default function Settings() {
+  return (
+    <ProtectedRoute>
+      <SettingsContent />
+    </ProtectedRoute>
   );
 }
